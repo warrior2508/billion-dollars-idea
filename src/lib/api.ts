@@ -10,6 +10,7 @@ interface UserData {
   email: string;
   username: string;
   password: string;
+  organisation_id?: number;
 }
 
 interface ModelData {
@@ -81,8 +82,18 @@ export const loginUser = async (username: string, password: string): Promise<Log
 };
 
 export const registerUser = async (data: UserData) => {
-  const response = await api.post('/users/', data);
-  return response.data;
+  try {
+    const response = await api.post('/users/', {
+      ...data,
+      organisation_id: data.organisation_id || 0  // Default to 0 if not provided
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(error.response?.data?.detail || 'Registration failed');
+    }
+    throw error;
+  }
 };
 
 // Model management functions

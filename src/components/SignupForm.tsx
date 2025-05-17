@@ -16,17 +16,30 @@ export function SignupForm() {
     password: '',
   });
   const [error, setError] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
     try {
-      await registerUser(formData);
-      // After successful registration, log the user in
+      // First register the user
+      await registerUser({
+        ...formData,
+        organisation_id: 0 // Default organization ID
+      });
+
+      // Then log them in
       await loginUser(formData.username, formData.password);
+      
+      // Navigate to dashboard on success
       navigate('/dashboard');
     } catch (err) {
-      setError('Registration failed. Please try again.');
-      console.error(err);
+      setError(err instanceof Error ? err.message : 'Registration failed. Please try again.');
+      console.error('Registration error:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -91,9 +104,10 @@ export function SignupForm() {
         </div>
         <button
           type="submit"
+          disabled={isLoading}
           className="w-full py-2 px-4 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-md font-semibold hover:opacity-90 transition-all disabled:opacity-50"
         >
-          Sign Up
+          {isLoading ? 'Signing up...' : 'Sign Up'}
         </button>
       </form>
     </div>
