@@ -1,5 +1,5 @@
 import { PerformanceDataOptions } from "@/constant/LineChart.data";
-import { Doughnut, Line } from "react-chartjs-2";
+import { lazy, Suspense } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -9,7 +9,11 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { Bar } from "react-chartjs-2";
+
+// Lazy load chart components
+const Doughnut = lazy(() => import('react-chartjs-2').then(mod => ({ default: mod.Doughnut })));
+const Line = lazy(() => import('react-chartjs-2').then(mod => ({ default: mod.Line })));
+const Bar = lazy(() => import('react-chartjs-2').then(mod => ({ default: mod.Bar })));
 
 ChartJS.register(
   CategoryScale,
@@ -32,18 +36,6 @@ const data = [
     value: "$12,000",
     color: "#a4f4cf",
     txtColor: "#00a63e",
-  },
-];
-
-const PieChartData = [
-  {
-    label: ["LLM", "Vision", "Speech"],
-    data: {
-      label: "My First Dataset",
-      data: [50, 150, 180],
-      backgroundColor: ["#9f3fe5", "#008080", "#e60076"],
-      hoverOffset: 4,
-    },
   },
 ];
 
@@ -308,7 +300,9 @@ const Cost = () => {
             <h1 className="text-gray-900 font-bold text-xl px-5">
               Resource Usage vs Cost
             </h1>
-            <Line data={lineChartData} options={lineChartOptions} />
+            <Suspense fallback={<div>Loading chart...</div>}>
+              <Line data={lineChartData} options={lineChartOptions} />
+            </Suspense>
           </div>
           <div className="bg-white rounded-lg p-5">
             <h3 className="text-gray-900 font-semibold text-xl mx-5 my-4">
@@ -399,7 +393,9 @@ const Cost = () => {
               {" "}
               Key Metrics Panel
             </h3>
-            <Doughnut data={PieChartData2} options={PerformanceDataOptions} />
+            <Suspense fallback={<div>Loading chart...</div>}>
+              <Doughnut data={PieChartData2} options={PerformanceDataOptions} />
+            </Suspense>
           </div>
         </div>
         <div className="bg-white rounded-lg p-5  shadow-lg">
@@ -425,7 +421,9 @@ const PieChart = ({
   return (
     <div className="bg-transparent flex flex-col gap-3 py-3">
       <h3 className="text-center font-semibold text-lg"> {title}</h3>
-      <Doughnut data={data} options={PerformanceDataOptions} />
+      <Suspense fallback={<div>Loading chart...</div>}>
+        <Doughnut data={data} options={PerformanceDataOptions} />
+      </Suspense>
       <div className="text-center font-bold text-lg"> {value} </div>
     </div>
   );

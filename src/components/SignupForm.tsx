@@ -1,40 +1,41 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { registerUser } from '@/lib/api';
+import { registerUser, loginUser } from '@/lib/api';
+
+interface FormData {
+  email: string;
+  username: string;
+  password: string;
+}
 
 export function SignupForm() {
-  const [formData, setFormData] = useState({
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState<FormData>({
     email: '',
     username: '',
     password: '',
   });
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  const [error, setError] = useState<string>('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
-
     try {
       await registerUser(formData);
       // After successful registration, log the user in
       await loginUser(formData.username, formData.password);
       navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to register. Please try again.');
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      setError('Registration failed. Please try again.');
+      console.error(err);
     }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   return (
@@ -90,10 +91,9 @@ export function SignupForm() {
         </div>
         <button
           type="submit"
-          disabled={loading}
           className="w-full py-2 px-4 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-md font-semibold hover:opacity-90 transition-all disabled:opacity-50"
         >
-          {loading ? 'Creating Account...' : 'Sign Up'}
+          Sign Up
         </button>
       </form>
     </div>

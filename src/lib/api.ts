@@ -1,5 +1,36 @@
 import axios from 'axios';
 
+// Types
+interface LoginResponse {
+  access_token: string;
+  token_type: string;
+}
+
+interface UserData {
+  email: string;
+  username: string;
+  password: string;
+}
+
+interface ModelData {
+  name: string;
+  description: string;
+  file?: File;
+}
+
+interface ScaleData {
+  replicas: number;
+  resources: {
+    cpu: string;
+    memory: string;
+  };
+}
+
+interface OrganizationData {
+  name: string;
+  description: string;
+}
+
 // Use environment variable for API base URL
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://51.20.140.171:3000";
 
@@ -33,12 +64,12 @@ api.interceptors.response.use(
 );
 
 // Authentication functions
-export const loginUser = async (username: string, password: string) => {
+export const loginUser = async (username: string, password: string): Promise<LoginResponse> => {
   const formData = new URLSearchParams();
   formData.append('username', username);
   formData.append('password', password);
 
-  const response = await api.post('/token', formData, {
+  const response = await api.post<LoginResponse>('/token', formData, {
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
@@ -49,11 +80,7 @@ export const loginUser = async (username: string, password: string) => {
   return response.data;
 };
 
-export const registerUser = async (data: {
-  email: string;
-  username: string;
-  password: string;
-}) => {
+export const registerUser = async (data: UserData) => {
   const response = await api.post('/users/', data);
   return response.data;
 };
@@ -64,9 +91,13 @@ export const getModels = async () => {
   return response.data;
 };
 
-export const uploadModel = async (file: File) => {
+export const uploadModel = async (data: ModelData) => {
   const formData = new FormData();
-  formData.append('file', file);
+  if (data.file) {
+    formData.append('file', data.file);
+  }
+  formData.append('name', data.name);
+  formData.append('description', data.description);
   
   const response = await api.post('/models/', formData, {
     headers: {
@@ -89,7 +120,7 @@ export const getModelMetrics = async (modelId: string) => {
   return response.data;
 };
 
-export const scaleModel = async (modelId: string, scaleData: any) => {
+export const scaleModel = async (modelId: string, scaleData: ScaleData) => {
   const response = await api.post(`/models/${modelId}/scale`, scaleData);
   return response.data;
 };
@@ -99,7 +130,7 @@ export const deleteModel = async (modelId: string) => {
   return response.data;
 };
 
-export const createOrganization = async (orgData: any) => {
+export const createOrganization = async (orgData: OrganizationData) => {
   const response = await api.post('/organizations/', orgData);
   return response.data;
 }; 

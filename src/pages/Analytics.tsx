@@ -38,8 +38,8 @@ const Analytics = () => {
         <div className="flex items-center justify-between px-10 py-4">
           <h1 className="text-2xl font-bold "> Analytics </h1>
           <div className="flex gap-2">
-            <DatePicker date={currDate} setDate={setCurrDate} />
-            <DatePicker date={prevDate} setDate={setPrevDate} />
+            <DatePicker date={currDate} onDateChange={setCurrDate} />
+            <DatePicker date={prevDate} onDateChange={setPrevDate} />
             <div className="flex items-center gap-2 text-indigo-700 bg-white py-2 px-5 rounded-lg cursor-pointer">
               <svg
                 xmlns="http://www.w3.org/2000/svg"

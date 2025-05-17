@@ -1,6 +1,6 @@
-import { Chart } from "chart.js";
+import { Chart, ChartData, ChartOptions } from "chart.js";
 
-export const PieData = {
+export const PieData: ChartData<"doughnut"> = {
   labels: ["Ongoing", "Completed"],
   datasets: [
     {
@@ -12,35 +12,42 @@ export const PieData = {
   ],
 };
 
-export const LineData = {
+export const LineData: ChartData<"line"> = {
   labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"],
   datasets: [
     {
       label: "Days",
-      data: [30, 20, 10, 1, 12, 18, 0], // Example data
+      data: [30, 20, 10, 1, 12, 18, 0],
       borderColor: "blue",
       backgroundColor: "rgba(0, 0, 255, 0.2)",
       fill: false,
-      tension: 0.4, // Smooth curve
-      pointRadius: 0,
+      tension: 0.4,
+      pointRadius: 4,
+      pointHoverRadius: 6,
     },
     {
       label: "Cost in USD",
-      data: [1000, 1200, 1500, 1600, 1400, 1100, 900], // Example data
+      data: [1000, 1200, 1500, 1600, 1400, 1100, 900],
       borderColor: "gray",
       backgroundColor: "rgba(128, 128, 128, 0.2)",
       fill: false,
-      tension: 0.4, // Smooth curve
-      pointRadius: 0,
+      tension: 0.4,
+      pointRadius: 4,
+      pointHoverRadius: 6,
     },
   ],
 };
 
-export const options = {
+export const options: ChartOptions<"line"> = {
   responsive: true,
   plugins: {
     legend: {
-      position: "bottom", // Positions legend at the bottom
+      position: "bottom",
+    },
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
     },
   },
 };
@@ -75,7 +82,7 @@ export const LineData1: ChartDataProps = {
   ],
 };
 
-export const BarChartData = {
+export const BarChartData: ChartData<"bar"> = {
   labels: ["Jan", "Feb", "Mar"],
   datasets: [
     {
@@ -88,12 +95,12 @@ export const BarChartData = {
   ],
 };
 
-export const BarOptions = {
+export const BarOptions: ChartOptions<"bar"> = {
   responsive: true,
   plugins: {
     legend: {
       display: true,
-      position: "top" as const,
+      position: "top",
     },
     title: {
       display: true,
@@ -112,11 +119,11 @@ export const BarOptions = {
   },
 };
 
-export const HalfDoughnutData = {
+export const HalfDoughnutData: ChartData<"doughnut"> = {
   labels: ["Red", "Blue"],
   datasets: [
     {
-      data: [40, 30], // Example percentages
+      data: [40, 30],
       backgroundColor: ["rgb(63, 81, 181)", "#CED0F8"],
       hoverBackgroundColor: ["rgb(63, 81, 195)", "#CED0F9"],
       borderWidth: 2,
@@ -124,15 +131,15 @@ export const HalfDoughnutData = {
   ],
 };
 
-export const HalfDoughnutOption = {
+export const HalfDoughnutOption: ChartOptions<"doughnut"> = {
   responsive: true,
-  cutout: "70%", // Controls the thickness of the chart
-  rotation: -90, // Starts from the top
-  circumference: 180, // Makes it a half-doughnut
+  cutout: "70%",
+  rotation: -90,
+  circumference: 180,
   plugins: {
     legend: {
       display: false,
-      position: "bottom" as const,
+      position: "bottom",
     },
   },
 };
@@ -140,7 +147,6 @@ export const HalfDoughnutOption = {
 export const HDCenterTextPlugin = {
   id: "centerText",
   beforeDraw: (chart: Chart) => {
-    // <-- Use 'Chart' type from chart.js
     const { width, height, ctx } = chart;
     ctx.save();
 
@@ -149,44 +155,47 @@ export const HDCenterTextPlugin = {
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
 
-    const text = "75%"; // Change this to your dynamic value
+    const text = "75%";
     const textX = width / 2;
-    const textY = height / 1.6; // Adjust this for better alignment
+    const textY = height / 1.6;
 
     ctx.fillText(text, textX, textY);
     ctx.restore();
   },
 };
 
-export const LineData2 = {
+export const LineData2: ChartData<"line"> = {
   labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"],
   datasets: [
     {
       label: "Days",
-      data: [30, 25, 20, 18, 22, 28, 20], // Example data
+      data: [30, 25, 20, 18, 22, 28, 20],
       borderColor: "rgb(57, 73, 171)",
       backgroundColor: "rgb(57, 73, 171)",
       fill: false,
-      tension: 0.4, // Smooth curve
-      pointRadius: 0,
+      tension: 0.4,
+      pointRadius: 4,
+      pointHoverRadius: 6,
     },
     {
       label: "Days",
-      data: [15, 28, 10, 8, 14, 18, 20], // Example data
+      data: [15, 28, 10, 8, 14, 18, 20],
       borderColor: "rgb(233, 30, 99)",
       backgroundColor: "rgb(233, 30, 99)",
       fill: false,
-      tension: 0.4, // Smooth curve
-      pointRadius: 0,
+      tension: 0.4,
+      pointRadius: 4,
+      pointHoverRadius: 6,
     },
     {
       label: "Days",
-      data: [25, 24, 26, 16, 12, 23, 27], // Example data
+      data: [25, 24, 26, 16, 12, 23, 27],
       borderColor: "rgb(0, 150, 136)",
       backgroundColor: "rgb(0, 150, 136)",
       fill: false,
-      tension: 0.4, // Smooth curve
-      pointRadius: 0,
+      tension: 0.4,
+      pointRadius: 4,
+      pointHoverRadius: 6,
     },
   ],
 };
