@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://51.20.140.171:3000';
+// Use environment variable for API base URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://51.20.140.171:3000";
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -60,6 +61,18 @@ export const registerUser = async (data: {
 // Model management functions
 export const getModels = async () => {
   const response = await api.get('/models/');
+  return response.data;
+};
+
+export const uploadModel = async (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const response = await api.post('/models/', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
   return response.data;
 };
 
