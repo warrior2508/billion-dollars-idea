@@ -10,7 +10,7 @@ interface UserData {
   email: string;
   username: string;
   password: string;
-  organisation_id?: number;
+  organization_id?: number;
 }
 
 interface ModelData {
@@ -85,7 +85,7 @@ export const registerUser = async (data: UserData) => {
   try {
     const response = await api.post('/users/', {
       ...data,
-      organisation_id: data.organisation_id || 0  // Default to 0 if not provided
+      organization_id: data.organization_id || 0  // American spelling
     });
     return response.data;
   } catch (error) {

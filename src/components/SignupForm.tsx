@@ -27,7 +27,7 @@ export function SignupForm() {
       // First register the user
       await registerUser({
         ...formData,
-        organisation_id: 0 // Default organization ID
+        organization_id: 0 // American spelling
       });
 
       // Then log them in
