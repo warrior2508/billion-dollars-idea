@@ -33,7 +33,7 @@ interface OrganizationData {
 }
 
 // Use environment variable for API base URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://51.20.140.171:3000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://51.20.140.171:3000";
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -99,7 +99,13 @@ export const registerUser = async (data: UserData) => {
 // Model management functions
 export const getModels = async () => {
   const response = await api.get('/models/');
-  return response.data;
+  // Ensure we always return an array
+  const data = response.data;
+  if (!Array.isArray(data)) {
+    console.error('Expected array from /models/ endpoint, got:', typeof data);
+    return [];
+  }
+  return data;
 };
 
 export const uploadModel = async (data: ModelData) => {

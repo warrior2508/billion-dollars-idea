@@ -36,9 +36,17 @@ const Models = () => {
   const fetchModels = async () => {
     try {
       const data = await getModels();
+      if (!Array.isArray(data)) {
+        console.error('Received non-array data from getModels:', data);
+        setError('Invalid data format received from server');
+        setModels([]);
+        return;
+      }
       setModels(data);
     } catch (err: any) {
+      console.error('Error fetching models:', err);
       setError(err.response?.data?.detail || 'Failed to fetch models');
+      setModels([]);
     } finally {
       setLoading(false);
     }
