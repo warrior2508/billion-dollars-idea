@@ -102,6 +102,12 @@ export const getModels = async () => {
     const response = await api.get('/models/');
     const data = response.data;
     
+    // Check if the response is HTML (error page)
+    if (typeof data === 'string' && data.trim().toLowerCase().startsWith('<!doctype')) {
+      console.error('Received HTML response instead of JSON:', data.substring(0, 200) + '...');
+      throw new Error('Server returned an error page. Please check the API endpoint.');
+    }
+    
     // If data is a string, try to parse it as JSON
     if (typeof data === 'string') {
       try {
@@ -109,7 +115,7 @@ export const getModels = async () => {
         return Array.isArray(parsedData) ? parsedData : [];
       } catch (e) {
         console.error('Failed to parse models data:', e);
-        return [];
+        throw new Error('Invalid response format from server');
       }
     }
     
@@ -124,9 +130,24 @@ export const getModels = async () => {
     }
     
     console.error('Unexpected data format from /models/ endpoint:', data);
-    return [];
+    throw new Error('Unexpected response format from server');
   } catch (error) {
     if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      
+      // Handle specific error cases
+      if (status === 422) {
+        throw new Error('Invalid request format. Please check your request parameters.');
+      } else if (status === 401) {
+        throw new Error('Authentication required. Please log in again.');
+      } else if (status === 403) {
+        throw new Error('Access denied. You do not have permission to view models.');
+      } else if (status === 404) {
+        throw new Error('Models endpoint not found. Please check the API configuration.');
+      } else if (status === 500) {
+        throw new Error('Server error. Please try again later.');
+      }
+      
       console.error('Error fetching models:', error.response?.data || error.message);
       throw new Error(error.response?.data?.detail || 'Failed to fetch models');
     }
