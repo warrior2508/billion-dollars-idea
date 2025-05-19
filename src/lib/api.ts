@@ -98,14 +98,40 @@ export const registerUser = async (data: UserData) => {
 
 // Model management functions
 export const getModels = async () => {
-  const response = await api.get('/models/');
-  // Ensure we always return an array
-  const data = response.data;
-  if (!Array.isArray(data)) {
-    console.error('Expected array from /models/ endpoint, got:', typeof data);
+  try {
+    const response = await api.get('/models/');
+    const data = response.data;
+    
+    // If data is a string, try to parse it as JSON
+    if (typeof data === 'string') {
+      try {
+        const parsedData = JSON.parse(data);
+        return Array.isArray(parsedData) ? parsedData : [];
+      } catch (e) {
+        console.error('Failed to parse models data:', e);
+        return [];
+      }
+    }
+    
+    // If data is already an array, return it
+    if (Array.isArray(data)) {
+      return data;
+    }
+    
+    // If data is an object with a models property, return that
+    if (data && typeof data === 'object' && 'models' in data && Array.isArray(data.models)) {
+      return data.models;
+    }
+    
+    console.error('Unexpected data format from /models/ endpoint:', data);
     return [];
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Error fetching models:', error.response?.data || error.message);
+      throw new Error(error.response?.data?.detail || 'Failed to fetch models');
+    }
+    throw error;
   }
-  return data;
 };
 
 export const uploadModel = async (data: ModelData) => {

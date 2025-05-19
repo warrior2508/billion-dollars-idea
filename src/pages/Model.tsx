@@ -243,14 +243,20 @@ const ModelCard = ({
     );
   };
 
+  // Ensure all required props are present and valid
+  if (!title || !state || !value) {
+    console.error('Missing required props in ModelCard:', { title, state, value });
+    return null;
+  }
+
   return (
     <div
-      className={`rounded-lg shadow-md p-4 flex flex-col gap-5 py-8 px-5 ${className} relative hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ease-in-out`}
+      className={`rounded-lg shadow-md p-4 flex flex-col gap-5 py-8 px-5 ${className || ''} relative hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ease-in-out`}
     >
       {getStatusBadge(state)}
       <div className="flex items-center gap-2 justify-between">
         <img
-          src={icon}
+          src={icon || "/icons/chatgpt.png"}
           alt={title}
           className="w-10 h-10"
           width={40}
