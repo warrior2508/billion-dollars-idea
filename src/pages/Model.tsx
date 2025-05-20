@@ -65,7 +65,13 @@ const Models = () => {
       });
 
       if (validModels.length !== data.length) {
-        toast.error(`Filtered out ${data.length - validModels.length} invalid model entries`);
+        toast(`Filtered out ${data.length - validModels.length} invalid model entries`, {
+          icon: '⚠️',
+          style: {
+            background: '#FEF3C7',
+            color: '#92400E',
+          },
+        });
       }
 
       setModels(validModels);
