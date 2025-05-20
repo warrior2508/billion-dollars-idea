@@ -65,7 +65,7 @@ const Models = () => {
       });
 
       if (validModels.length !== data.length) {
-        toast.warning(`Filtered out ${data.length - validModels.length} invalid model entries`);
+        toast.error(`Filtered out ${data.length - validModels.length} invalid model entries`);
       }
 
       setModels(validModels);
