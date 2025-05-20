@@ -18,6 +18,7 @@ import {
   StackBarChartData,
 } from "@/constant/LineChart.data";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
+import { toast } from 'react-hot-toast';
 
 interface Model {
   id: string;
@@ -35,17 +36,44 @@ const Models = () => {
 
   const fetchModels = async () => {
     try {
+      setLoading(true);
+      setError('');
       const data = await getModels();
+      
+      // Ensure data is an array before setting state
       if (!Array.isArray(data)) {
         console.error('Received non-array data from getModels:', data);
+        toast.error('Invalid data format received from server');
         setError('Invalid data format received from server');
         setModels([]);
         return;
       }
-      setModels(data);
+
+      // Validate each model object has required fields
+      const validModels = data.filter(model => {
+        const isValid = model && 
+          typeof model === 'object' && 
+          'id' in model && 
+          'name' in model && 
+          'status' in model && 
+          'performance' in model;
+        
+        if (!isValid) {
+          console.warn('Invalid model object:', model);
+        }
+        return isValid;
+      });
+
+      if (validModels.length !== data.length) {
+        toast.warning(`Filtered out ${data.length - validModels.length} invalid model entries`);
+      }
+
+      setModels(validModels);
     } catch (err: any) {
       console.error('Error fetching models:', err);
-      setError(err.response?.data?.detail || 'Failed to fetch models');
+      const errorMessage = err.message || 'Failed to fetch models';
+      toast.error(errorMessage);
+      setError(errorMessage);
       setModels([]);
     } finally {
       setLoading(false);
@@ -117,7 +145,7 @@ const Models = () => {
           renderEmptyState()
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 px-4 sm:px-10">
-            {models.map((model) => (
+            {Array.isArray(models) && models.map((model) => (
               <ModelCard
                 key={model.id}
                 icon={"/icons/chatgpt.png"}

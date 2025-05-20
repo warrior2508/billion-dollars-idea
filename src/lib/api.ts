@@ -99,7 +99,22 @@ export const registerUser = async (data: UserData) => {
 // Model management functions
 export const getModels = async () => {
   try {
-    const response = await api.get('/models/');
+    // Get the token from localStorage
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await api.get('/models/', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
+    });
+
+    // Log the full response for debugging
+    console.log("Models Response:", response.data);
+
     const data = response.data;
     
     // Check if the response is HTML (error page)
@@ -112,7 +127,10 @@ export const getModels = async () => {
     if (typeof data === 'string') {
       try {
         const parsedData = JSON.parse(data);
-        return Array.isArray(parsedData) ? parsedData : [];
+        if (!Array.isArray(parsedData)) {
+          throw new Error('Parsed data is not an array');
+        }
+        return parsedData;
       } catch (e) {
         console.error('Failed to parse models data:', e);
         throw new Error('Invalid response format from server');
@@ -139,6 +157,9 @@ export const getModels = async () => {
       if (status === 422) {
         throw new Error('Invalid request format. Please check your request parameters.');
       } else if (status === 401) {
+        // Clear token and redirect to login
+        localStorage.removeItem('token');
+        window.location.href = '/login';
         throw new Error('Authentication required. Please log in again.');
       } else if (status === 403) {
         throw new Error('Access denied. You do not have permission to view models.');
