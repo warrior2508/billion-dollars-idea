@@ -44,7 +44,7 @@ const api = axios.create({
   },
   // Add timeout and other production settings
   timeout: 10000,
-  withCredentials: true
+  withCredentials: false  // Changed to false for ngrok testing
 });
 
 // Add request interceptor to add auth token
@@ -53,7 +53,6 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-   // Remove the incorrect CORS header
   return config;
 });
 
