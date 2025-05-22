@@ -44,7 +44,7 @@ const api = axios.create({
   },
   // Add timeout and other production settings
   timeout: 10000,
-  withCredentials: false  // Changed to false for ngrok testing
+  withCredentials: false
 });
 
 // Add request interceptor to add auth token
@@ -53,6 +53,8 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Add origin header
+  config.headers['Origin'] = window.location.origin;
   return config;
 });
 
@@ -115,7 +117,8 @@ export const getModels = async () => {
     const response = await api.get('/models/', {
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Origin': window.location.origin
       }
     });
 
@@ -127,71 +130,40 @@ export const getModels = async () => {
       data: response.data
     });
 
-    const data = response.data;
-    
-    // Check if the response is HTML (error page)
-    if (typeof data === 'string' && data.trim().toLowerCase().startsWith('<!doctype')) {
-      console.error('Received HTML response instead of JSON:', data.substring(0, 200) + '...');
-      throw new Error('Server returned an error page. Please check if the backend is running and the API endpoint is correct.');
+    if (!response.data) {
+      throw new Error('No data received from server');
     }
-    
-    // If data is a string, try to parse it as JSON
-    if (typeof data === 'string') {
-      try {
-        const parsedData = JSON.parse(data);
-        if (!Array.isArray(parsedData)) {
-          console.error('Parsed data is not an array:', parsedData);
-          throw new Error('Invalid response format: expected an array');
-        }
-        return parsedData;
-      } catch (e) {
-        console.error('Failed to parse models data:', e);
-        throw new Error('Invalid response format from server');
-      }
+
+    // Handle different response formats
+    if (Array.isArray(response.data)) {
+      return response.data;
+    } else if (response.data && typeof response.data === 'object' && 'models' in response.data) {
+      return response.data.models;
+    } else {
+      console.error('Unexpected response format:', response.data);
+      throw new Error('Invalid response format from server');
     }
-    
-    // If data is already an array, return it
-    if (Array.isArray(data)) {
-      return data;
-    }
-    
-    // If data is an object with a models property, return that
-    if (data && typeof data === 'object' && 'models' in data && Array.isArray(data.models)) {
-      return data.models;
-    }
-    
-    console.error('Unexpected data format from /models/ endpoint:', data);
-    throw new Error('Unexpected response format from server');
   } catch (error) {
+    console.error('Error details:', error);
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
+      const data = error.response?.data;
       
-      // Handle specific error cases
       if (status === 422) {
-        throw new Error('Invalid request format. Please check your request parameters.');
+        throw new Error(data?.detail || 'Invalid request format');
       } else if (status === 401) {
-        // Clear token and redirect to login
         localStorage.removeItem('token');
         window.location.href = '/login';
-        throw new Error('Authentication required. Please log in again.');
+        throw new Error('Authentication required');
       } else if (status === 403) {
-        throw new Error('Access denied. You do not have permission to view models.');
+        throw new Error('Access denied');
       } else if (status === 404) {
-        throw new Error('Models endpoint not found. Please check the API configuration.');
+        throw new Error('Models endpoint not found');
       } else if (status === 500) {
-        throw new Error('Server error. Please try again later.');
+        throw new Error('Server error');
       }
       
-      // Log detailed error information
-      console.error('Error fetching models:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        headers: error.response?.headers,
-        message: error.message
-      });
-      
-      throw new Error(error.response?.data?.detail || 'Failed to fetch models');
+      throw new Error(data?.detail || 'Failed to fetch models');
     }
     throw error;
   }
