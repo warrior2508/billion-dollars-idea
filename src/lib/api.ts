@@ -53,8 +53,7 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  // Ensure headers are properly set for CORS
-  config.headers['Access-Control-Allow-Origin'] = '*';
+   // Remove the incorrect CORS header
   return config;
 });
 
