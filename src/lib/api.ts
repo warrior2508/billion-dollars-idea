@@ -33,14 +33,18 @@ interface OrganizationData {
 }
 
 // Use environment variable for API base URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://51.20.140.171:3000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://c847-51-20-140-171.ngrok-free.app";
 
 // Create axios instance with base configuration
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json'
   },
+  // Add timeout and other production settings
+  timeout: 10000,
+  withCredentials: true
 });
 
 // Add request interceptor to add auth token
@@ -49,6 +53,8 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  // Ensure headers are properly set for CORS
+  config.headers['Access-Control-Allow-Origin'] = '*';
   return config;
 });
 
@@ -105,6 +111,9 @@ export const getModels = async () => {
       throw new Error('No authentication token found');
     }
 
+    // Log the API URL being used
+    console.log('Fetching models from:', `${API_BASE_URL}/models/`);
+
     const response = await api.get('/models/', {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -113,14 +122,19 @@ export const getModels = async () => {
     });
 
     // Log the full response for debugging
-    console.log("Models Response:", response.data);
+    console.log("Full Response:", {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+      data: response.data
+    });
 
     const data = response.data;
     
     // Check if the response is HTML (error page)
     if (typeof data === 'string' && data.trim().toLowerCase().startsWith('<!doctype')) {
       console.error('Received HTML response instead of JSON:', data.substring(0, 200) + '...');
-      throw new Error('Server returned an error page. Please check the API endpoint.');
+      throw new Error('Server returned an error page. Please check if the backend is running and the API endpoint is correct.');
     }
     
     // If data is a string, try to parse it as JSON
@@ -128,7 +142,8 @@ export const getModels = async () => {
       try {
         const parsedData = JSON.parse(data);
         if (!Array.isArray(parsedData)) {
-          throw new Error('Parsed data is not an array');
+          console.error('Parsed data is not an array:', parsedData);
+          throw new Error('Invalid response format: expected an array');
         }
         return parsedData;
       } catch (e) {
@@ -169,7 +184,15 @@ export const getModels = async () => {
         throw new Error('Server error. Please try again later.');
       }
       
-      console.error('Error fetching models:', error.response?.data || error.message);
+      // Log detailed error information
+      console.error('Error fetching models:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        headers: error.response?.headers,
+        message: error.message
+      });
+      
       throw new Error(error.response?.data?.detail || 'Failed to fetch models');
     }
     throw error;
