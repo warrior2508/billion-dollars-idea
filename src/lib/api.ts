@@ -53,15 +53,37 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  // Add origin header
-  config.headers['Origin'] = window.location.origin;
+  
+  // Log request details for debugging
+  console.log('Request config:', {
+    url: config.url,
+    method: config.method,
+    headers: config.headers,
+    baseURL: config.baseURL
+  });
+  
   return config;
 });
 
-// Add response interceptor to handle token expiration
+// Add response interceptor for debugging
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    console.log('Response received:', {
+      status: response.status,
+      headers: response.headers,
+      data: response.data
+    });
+    return response;
+  },
   (error) => {
+    console.error('API Error:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      headers: error.response?.headers,
+      config: error.config
+    });
+    
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       window.location.href = '/login';
@@ -105,62 +127,36 @@ export const registerUser = async (data: UserData) => {
 // Model management functions
 export const getModels = async () => {
   try {
-    // Get the token from localStorage
     const token = localStorage.getItem('token');
     if (!token) {
       throw new Error('No authentication token found');
     }
 
-    // Log the API URL being used
-    console.log('Fetching models from:', `${API_BASE_URL}/models/`);
-
+    console.log('Making request to:', `${API_BASE_URL}/models/`);
+    
     const response = await api.get('/models/', {
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json',
-        'Origin': window.location.origin
+        'Accept': 'application/json'
       }
-    });
-
-    // Log the full response for debugging
-    console.log("Full Response:", {
-      status: response.status,
-      statusText: response.statusText,
-      headers: response.headers,
-      data: response.data
     });
 
     if (!response.data) {
       throw new Error('No data received from server');
     }
 
-    // Handle different response formats
-    if (Array.isArray(response.data)) {
-      return response.data;
-    } else if (response.data && typeof response.data === 'object' && 'models' in response.data) {
-      return response.data.models;
-    } else {
-      console.error('Unexpected response format:', response.data);
-      throw new Error('Invalid response format from server');
-    }
+    return Array.isArray(response.data) ? response.data : 
+           (response.data.models || []);
+           
   } catch (error) {
-    console.error('Error details:', error);
+    console.error('getModels error:', error);
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
       const data = error.response?.data;
       
       if (status === 422) {
+        console.error('Validation error:', data);
         throw new Error(data?.detail || 'Invalid request format');
-      } else if (status === 401) {
-        localStorage.removeItem('token');
-        window.location.href = '/login';
-        throw new Error('Authentication required');
-      } else if (status === 403) {
-        throw new Error('Access denied');
-      } else if (status === 404) {
-        throw new Error('Models endpoint not found');
-      } else if (status === 500) {
-        throw new Error('Server error');
       }
       
       throw new Error(data?.detail || 'Failed to fetch models');
