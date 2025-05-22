@@ -166,6 +166,9 @@ export const getModels = async () => {
 };
 
 export const uploadModel = async (data: ModelData) => {
+  // Log data received by the function
+  console.log('Upload Model function received data:', data);
+
   const formData = new FormData();
   if (data.file) {
     formData.append('file', data.file);
