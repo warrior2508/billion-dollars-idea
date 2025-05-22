@@ -44,7 +44,7 @@ const api = axios.create({
   },
   // Add timeout and other production settings
   timeout: 10000,
-  withCredentials: false
+  withCredentials: true
 });
 
 // Add request interceptor to add auth token
@@ -177,6 +177,7 @@ export const uploadModel = async (data: ModelData) => {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
+    withCredentials: true
   });
   return response.data;
 };
