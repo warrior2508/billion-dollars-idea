@@ -11,6 +11,11 @@ export function ModelUploadModal({ isOpen, onClose, onSuccess }: ModelUploadModa
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    model_type: '',
+    version: '',
+    docker_image: '',
+    config: '{}',
+    resource_limits: '{}',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -20,12 +25,36 @@ export function ModelUploadModal({ isOpen, onClose, onSuccess }: ModelUploadModa
     setError('');
     setLoading(true);
 
+    let configObj, resourceLimitsObj;
     try {
-      await uploadModel(formData);
+      configObj = formData.config ? JSON.parse(formData.config) : {};
+    } catch (err) {
+      setError('Config must be valid JSON.');
+      setLoading(false);
+      return;
+    }
+    try {
+      resourceLimitsObj = formData.resource_limits ? JSON.parse(formData.resource_limits) : {};
+    } catch (err) {
+      setError('Resource Limits must be valid JSON.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      await uploadModel({
+        name: formData.name,
+        description: formData.description,
+        model_type: formData.model_type,
+        version: formData.version,
+        docker_image: formData.docker_image,
+        config: configObj,
+        resource_limits: resourceLimitsObj,
+      });
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to upload model. Please try again.');
+      setError(err.message || 'Failed to upload model. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -66,6 +95,71 @@ export function ModelUploadModal({ isOpen, onClose, onSuccess }: ModelUploadModa
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
               rows={3}
+            />
+          </div>
+          <div>
+            <label htmlFor="model_type" className="block text-sm font-medium text-gray-700 mb-1">
+              Model Type
+            </label>
+            <input
+              id="model_type"
+              type="text"
+              value={formData.model_type}
+              onChange={(e) => setFormData(prev => ({ ...prev, model_type: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="version" className="block text-sm font-medium text-gray-700 mb-1">
+              Version
+            </label>
+            <input
+              id="version"
+              type="text"
+              value={formData.version}
+              onChange={(e) => setFormData(prev => ({ ...prev, version: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="docker_image" className="block text-sm font-medium text-gray-700 mb-1">
+              Docker Image
+            </label>
+            <input
+              id="docker_image"
+              type="text"
+              value={formData.docker_image}
+              onChange={(e) => setFormData(prev => ({ ...prev, docker_image: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="config" className="block text-sm font-medium text-gray-700 mb-1">
+              Config (JSON)
+            </label>
+            <textarea
+              id="config"
+              value={formData.config}
+              onChange={(e) => setFormData(prev => ({ ...prev, config: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+              rows={3}
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="resource_limits" className="block text-sm font-medium text-gray-700 mb-1">
+              Resource Limits (JSON)
+            </label>
+            <textarea
+              id="resource_limits"
+              value={formData.resource_limits}
+              onChange={(e) => setFormData(prev => ({ ...prev, resource_limits: e.target.value }))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+              rows={3}
+              required
             />
           </div>
           <div className="flex justify-end gap-3">

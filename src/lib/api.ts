@@ -16,7 +16,11 @@ interface UserData {
 interface ModelData {
   name: string;
   description: string;
-  file?: File;
+  model_type: string;
+  version: string;
+  docker_image: string;
+  config: object;
+  resource_limits: object;
 }
 
 interface ScaleData {
@@ -172,23 +176,21 @@ export const getModels = async () => {
 };
 
 export const uploadModel = async (data: ModelData) => {
-  // Log data received by the function
-  console.log('Upload Model function received data:', data);
-
-  const formData = new FormData();
-  if (data.file) {
-    formData.append('file', data.file);
+  try {
+    const response = await api.post('/models/', data, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      withCredentials: true
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      // Pass backend validation errors up for toast display
+      throw new Error(error.response?.data?.detail || 'Failed to upload model.');
+    }
+    throw error;
   }
-  formData.append('name', data.name);
-  formData.append('description', data.description);
-  
-  const response = await api.post('/models/', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-    withCredentials: true
-  });
-  return response.data;
 };
 
 export const deployModel = async (modelId: string, cloudProvider: 'AWS' | 'GCP' | 'Azure') => {
