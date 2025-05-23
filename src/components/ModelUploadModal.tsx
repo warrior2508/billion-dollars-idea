@@ -25,9 +25,12 @@ export function ModelUploadModal({ isOpen, onClose, onSuccess }: ModelUploadModa
     setError('');
     setLoading(true);
 
+    console.log('Form data before submission:', formData);
+
     let configObj, resourceLimitsObj;
     try {
       configObj = formData.config ? JSON.parse(formData.config) : {};
+      console.log('Parsed config:', configObj);
     } catch (err) {
       setError('Config must be valid JSON.');
       setLoading(false);
@@ -35,25 +38,31 @@ export function ModelUploadModal({ isOpen, onClose, onSuccess }: ModelUploadModa
     }
     try {
       resourceLimitsObj = formData.resource_limits ? JSON.parse(formData.resource_limits) : {};
+      console.log('Parsed resource limits:', resourceLimitsObj);
     } catch (err) {
       setError('Resource Limits must be valid JSON.');
       setLoading(false);
       return;
     }
 
+    const modelData = {
+      name: formData.name,
+      description: formData.description,
+      model_type: formData.model_type,
+      version: formData.version,
+      docker_image: formData.docker_image,
+      config: configObj,
+      resource_limits: resourceLimitsObj,
+    };
+
+    console.log('Sending model data to API:', modelData);
+
     try {
-      await uploadModel({
-        name: formData.name,
-        description: formData.description,
-        model_type: formData.model_type,
-        version: formData.version,
-        docker_image: formData.docker_image,
-        config: configObj,
-        resource_limits: resourceLimitsObj,
-      });
+      await uploadModel(modelData);
       onSuccess();
       onClose();
     } catch (err: any) {
+      console.error('Upload error:', err);
       setError(err.message || 'Failed to upload model. Please try again.');
     } finally {
       setLoading(false);

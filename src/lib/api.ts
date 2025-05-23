@@ -176,6 +176,7 @@ export const getModels = async () => {
 };
 
 export const uploadModel = async (data: ModelData) => {
+  console.log('uploadModel received data:', data);
   try {
     const response = await api.post('/models/', data, {
       headers: {
@@ -184,10 +185,19 @@ export const uploadModel = async (data: ModelData) => {
       withCredentials: true
     });
     return response.data;
-  } catch (error) {
+  } catch (error: unknown) {
+    const axiosError = error as any;
+    console.error('Upload model error details:', {
+      error: String(error),
+      response: axiosError?.response?.data,
+      status: axiosError?.response?.status,
+      headers: axiosError?.response?.headers
+    });
     if (axios.isAxiosError(error)) {
       // Pass backend validation errors up for toast display
-      throw new Error(error.response?.data?.detail || 'Failed to upload model.');
+      const errorMessage = error.response?.data?.detail || 'Failed to upload model.';
+      console.error('Validation error:', errorMessage);
+      throw new Error(errorMessage);
     }
     throw error;
   }
