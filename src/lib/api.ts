@@ -43,8 +43,7 @@ const api = axios.create({
     'Accept': 'application/json',
   },
   // Add timeout and other production settings
-  timeout: 10000,
-  withCredentials: true
+  timeout: 10000
 });
 
 // Add request interceptor to add auth token
@@ -105,7 +104,14 @@ export const loginUser = async (username: string, password: string): Promise<Log
   });
   
   const { access_token } = response.data;
+  if (!access_token) {
+    throw new Error('No access token received from server');
+  }
+  
+  // Store token and log for debugging
   localStorage.setItem('token', access_token);
+  console.log('Token stored in localStorage:', access_token);
+  
   return response.data;
 };
 
