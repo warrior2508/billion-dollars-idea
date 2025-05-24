@@ -105,18 +105,38 @@ api.interceptors.response.use(
 // Authentication functions
 export const loginUser = async (username: string, password: string): Promise<LoginResponse> => {
   try {
+    // Log the incoming request data
+    console.log('Login attempt with:', { username });
+
+    // Create form data
     const formData = new URLSearchParams();
     formData.append('username', username);
     formData.append('password', password);
 
-    console.log('Attempting login with:', { username });
+    // Log the request configuration
+    console.log('Login request config:', {
+      url: `${API_BASE_URL}/token`,
+      method: 'POST',
+      data: formData.toString(),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      }
+    });
 
     const response = await api.post<LoginResponse>('/token', formData, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
+      transformRequest: [(data) => data], // Prevent axios from transforming the data
     });
     
+    // Log the raw response
+    console.log('Login response:', {
+      status: response.status,
+      headers: response.headers,
+      data: response.data
+    });
+
     // Validate response data
     if (!response.data || typeof response.data !== 'object') {
       console.error('Invalid response format:', response.data);
@@ -139,8 +159,16 @@ export const loginUser = async (username: string, password: string): Promise<Log
     console.log('Token stored in localStorage:', access_token);
     
     return response.data;
-  } catch (error) {
-    console.error('Login error:', error);
+  } catch (error: unknown) {
+    console.error('Login error details:', {
+      error: String(error),
+      isAxiosError: axios.isAxiosError(error),
+      status: axios.isAxiosError(error) ? error.response?.status : undefined,
+      data: axios.isAxiosError(error) ? error.response?.data : undefined,
+      headers: axios.isAxiosError(error) ? error.response?.headers : undefined,
+      config: axios.isAxiosError(error) ? error.config : undefined
+    });
+
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
       const data = error.response?.data;
