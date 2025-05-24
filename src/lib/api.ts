@@ -54,7 +54,14 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+    // Ensure proper Bearer token format
+    config.headers.Authorization = `Bearer ${token.trim()}`;
+    // Ensure proper content type for JSON
+    config.headers['Content-Type'] = 'application/json';
+    config.headers['Accept'] = 'application/json';
+  } else {
+    // Remove auth headers if no token
+    delete config.headers.Authorization;
   }
   
   // Log request details for debugging
@@ -144,11 +151,19 @@ export const getModels = async () => {
       throw new Error('Authentication required. Please log in.');
     }
 
+    // Validate token format
+    if (!token.trim()) {
+      console.error('Invalid token format - empty or whitespace only');
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+      throw new Error('Invalid authentication token. Please log in again.');
+    }
+
     console.log('Making request to:', `${API_BASE_URL}/models/`);
     
     const response = await api.get('/models/', {
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${token.trim()}`,
         'Accept': 'application/json',
         'Content-Type': 'application/json'
       },
@@ -163,6 +178,7 @@ export const getModels = async () => {
 
     // Handle different response status codes
     if (response.status === 401) {
+      console.error('Authentication failed - invalid or expired token');
       localStorage.removeItem('token');
       window.location.href = '/login';
       throw new Error('Authentication failed. Please log in again.');
@@ -190,6 +206,7 @@ export const getModels = async () => {
       const data = error.response?.data;
       
       if (status === 401) {
+        console.error('Authentication failed - invalid or expired token');
         localStorage.removeItem('token');
         window.location.href = '/login';
         throw new Error('Authentication failed. Please log in again.');
