@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
 // Types
 interface LoginResponse {
@@ -139,7 +139,9 @@ export const getModels = async () => {
   try {
     const token = localStorage.getItem('token');
     if (!token) {
-      throw new Error('No authentication token found');
+      console.error('No authentication token found in localStorage');
+      window.location.href = '/login';
+      throw new Error('Authentication required. Please log in.');
     }
 
     console.log('Making request to:', `${API_BASE_URL}/models/`);
@@ -147,21 +149,39 @@ export const getModels = async () => {
     const response = await api.get('/models/', {
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json'
-      }
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      validateStatus: (status) => status < 500 // Accept all responses except 5xx errors
     });
 
     // Check if response is HTML (indicating an error page)
     if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
+      console.error('Received HTML response:', response.data);
       throw new Error('Received HTML response instead of JSON. Check API endpoint configuration.');
+    }
+
+    // Handle different response status codes
+    if (response.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+      throw new Error('Authentication failed. Please log in again.');
+    }
+
+    if (response.status === 403) {
+      throw new Error('You do not have permission to access this resource.');
     }
 
     if (!response.data) {
       throw new Error('No data received from server');
     }
 
-    return Array.isArray(response.data) ? response.data : 
-           (response.data.models || []);
+    // Ensure we're returning an array of models
+    const models = Array.isArray(response.data) ? response.data : 
+                  (response.data.models || []);
+    
+    console.log('Successfully fetched models:', models);
+    return models;
            
   } catch (error) {
     console.error('getModels error:', error);
@@ -170,7 +190,6 @@ export const getModels = async () => {
       const data = error.response?.data;
       
       if (status === 401) {
-        // Clear token and redirect to login on authentication failure
         localStorage.removeItem('token');
         window.location.href = '/login';
         throw new Error('Authentication failed. Please log in again.');
@@ -198,7 +217,7 @@ export const uploadModel = async (data: ModelData) => {
     });
     return response.data;
   } catch (error: unknown) {
-    const axiosError = error as any;
+    const axiosError = error as AxiosError;
     console.error('Upload model error details:', {
       error: String(error),
       response: axiosError?.response?.data,
