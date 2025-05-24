@@ -151,6 +151,11 @@ export const getModels = async () => {
       }
     });
 
+    // Check if response is HTML (indicating an error page)
+    if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
+      throw new Error('Received HTML response instead of JSON. Check API endpoint configuration.');
+    }
+
     if (!response.data) {
       throw new Error('No data received from server');
     }
@@ -163,6 +168,13 @@ export const getModels = async () => {
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
       const data = error.response?.data;
+      
+      if (status === 401) {
+        // Clear token and redirect to login on authentication failure
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+        throw new Error('Authentication failed. Please log in again.');
+      }
       
       if (status === 422) {
         console.error('Validation error:', data);
