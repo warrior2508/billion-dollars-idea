@@ -47,22 +47,21 @@ const api = axios.create({
     'Accept': 'application/json',
   },
   // Add timeout and other production settings
-  timeout: 10000
+  timeout: 10000,
+  // Ensure we get JSON responses
+  responseType: 'json'
 });
 
 // Add request interceptor to add auth token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
-    // Ensure proper Bearer token format
-    config.headers.Authorization = `Bearer ${token.trim()}`;
-    // Ensure proper content type for JSON
-    config.headers['Content-Type'] = 'application/json';
-    config.headers['Accept'] = 'application/json';
-  } else {
-    // Remove auth headers if no token
-    delete config.headers.Authorization;
+    config.headers.Authorization = `Bearer ${token}`;
   }
+  
+  // Ensure proper headers for JSON
+  config.headers['Accept'] = 'application/json';
+  config.headers['Content-Type'] = 'application/json';
   
   // Log request details for debugging
   console.log('Request config:', {
@@ -78,6 +77,12 @@ api.interceptors.request.use((config) => {
 // Add response interceptor for debugging
 api.interceptors.response.use(
   (response) => {
+    // Check if response is HTML
+    if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
+      console.error('Received HTML response:', response.data);
+      throw new Error('Received HTML response instead of JSON. Please check your API endpoint.');
+    }
+    
     console.log('Response received:', {
       status: response.status,
       headers: response.headers,
@@ -104,90 +109,26 @@ api.interceptors.response.use(
 
 // Authentication functions
 export const loginUser = async (username: string, password: string): Promise<LoginResponse> => {
-  try {
-    // Log the incoming request data
-    console.log('Login attempt with:', { username });
+  const formData = new URLSearchParams();
+  formData.append('username', username);
+  formData.append('password', password);
 
-    // Create form data
-    const formData = new URLSearchParams();
-    formData.append('username', username);
-    formData.append('password', password);
-
-    // Log the request configuration
-    console.log('Login request config:', {
-      url: `${API_BASE_URL}/token`,
-      method: 'POST',
-      data: formData.toString(),
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      }
-    });
-
-    const response = await api.post<LoginResponse>('/token', formData, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      transformRequest: [(data) => data], // Prevent axios from transforming the data
-    });
-    
-    // Log the raw response
-    console.log('Login response:', {
-      status: response.status,
-      headers: response.headers,
-      data: response.data
-    });
-
-    // Validate response data
-    if (!response.data || typeof response.data !== 'object') {
-      console.error('Invalid response format:', response.data);
-      throw new Error('Invalid response from server');
-    }
-
-    const { access_token, token_type } = response.data;
-    
-    if (!access_token) {
-      console.error('No access token in response:', response.data);
-      throw new Error('No access token received from server');
-    }
-
-    if (token_type !== 'bearer') {
-      console.warn('Unexpected token type:', token_type);
-    }
-    
-    // Store token and log for debugging
-    localStorage.setItem('token', access_token);
-    console.log('Token stored in localStorage:', access_token);
-    
-    return response.data;
-  } catch (error: unknown) {
-    console.error('Login error details:', {
-      error: String(error),
-      isAxiosError: axios.isAxiosError(error),
-      status: axios.isAxiosError(error) ? error.response?.status : undefined,
-      data: axios.isAxiosError(error) ? error.response?.data : undefined,
-      headers: axios.isAxiosError(error) ? error.response?.headers : undefined,
-      config: axios.isAxiosError(error) ? error.config : undefined
-    });
-
-    if (axios.isAxiosError(error)) {
-      const status = error.response?.status;
-      const data = error.response?.data;
-
-      if (status === 422) {
-        // Handle validation errors
-        const validationErrors = data?.detail || 'Invalid credentials';
-        console.error('Validation error:', validationErrors);
-        throw new Error(validationErrors);
-      }
-
-      if (status === 401) {
-        throw new Error('Invalid username or password');
-      }
-
-      throw new Error(data?.detail || 'Login failed. Please try again.');
-    }
-    throw error;
+  const response = await api.post<LoginResponse>('/token', formData, {
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+  });
+  
+  const { access_token } = response.data;
+  if (!access_token) {
+    throw new Error('No access token received from server');
   }
+  
+  // Store token and log for debugging
+  localStorage.setItem('token', access_token);
+  console.log('Token stored in localStorage:', access_token);
+  
+  return response.data;
 };
 
 export const registerUser = async (data: UserData) => {
@@ -210,58 +151,24 @@ export const getModels = async () => {
   try {
     const token = localStorage.getItem('token');
     if (!token) {
-      console.error('No authentication token found in localStorage');
-      window.location.href = '/login';
-      throw new Error('Authentication required. Please log in.');
-    }
-
-    // Validate token format
-    if (!token.trim()) {
-      console.error('Invalid token format - empty or whitespace only');
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-      throw new Error('Invalid authentication token. Please log in again.');
+      throw new Error('No authentication token found');
     }
 
     console.log('Making request to:', `${API_BASE_URL}/models/`);
     
     const response = await api.get('/models/', {
       headers: {
-        'Authorization': `Bearer ${token.trim()}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      validateStatus: (status) => status < 500 // Accept all responses except 5xx errors
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      }
     });
-
-    // Check if response is HTML (indicating an error page)
-    if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
-      console.error('Received HTML response:', response.data);
-      throw new Error('Received HTML response instead of JSON. Check API endpoint configuration.');
-    }
-
-    // Handle different response status codes
-    if (response.status === 401) {
-      console.error('Authentication failed - invalid or expired token');
-      localStorage.removeItem('token');
-      window.location.href = '/login';
-      throw new Error('Authentication failed. Please log in again.');
-    }
-
-    if (response.status === 403) {
-      throw new Error('You do not have permission to access this resource.');
-    }
 
     if (!response.data) {
       throw new Error('No data received from server');
     }
 
-    // Ensure we're returning an array of models
-    const models = Array.isArray(response.data) ? response.data : 
-                  (response.data.models || []);
-    
-    console.log('Successfully fetched models:', models);
-    return models;
+    return Array.isArray(response.data) ? response.data : 
+           (response.data.models || []);
            
   } catch (error) {
     console.error('getModels error:', error);
@@ -270,7 +177,6 @@ export const getModels = async () => {
       const data = error.response?.data;
       
       if (status === 401) {
-        console.error('Authentication failed - invalid or expired token');
         localStorage.removeItem('token');
         window.location.href = '/login';
         throw new Error('Authentication failed. Please log in again.');
