@@ -37,7 +37,7 @@ interface OrganizationData {
 }
 
 // Use environment variable for API base URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://f2d1-51-20-140-171.ngrok-free.app";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://f663-51-20-140-171.ngrok-free.app";
 
 // Create axios instance with base configuration
 const api = axios.create({
