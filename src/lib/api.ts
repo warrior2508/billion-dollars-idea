@@ -109,51 +109,28 @@ api.interceptors.response.use(
 
 // Authentication functions
 export const loginUser = async (username: string, password: string): Promise<LoginResponse> => {
-  // Create form data using URLSearchParams
+  // Create the form data exactly as it appears in the working curl command
   const formData = new URLSearchParams();
   formData.append('username', username);
   formData.append('password', password);
+  formData.append('grant_type', 'password');
 
   try {
-    // Log the form data string to verify format
-    console.log('Login form data:', formData.toString());
-
     const response = await api.post<LoginResponse>('/token', formData, {
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
-      withCredentials: false,
-      // Ensure axios doesn't try to JSON stringify the form data
-      transformRequest: [(data) => data],
-    });
-
-    // Log the response for debugging
-    console.log('Login response:', {
-      status: response.status,
-      data: response.data
+      withCredentials: false
     });
 
     const { access_token } = response.data;
     if (!access_token) {
-      console.error('No access token in response:', response.data);
       throw new Error('No access token received from server');
     }
 
-    // Store token
     localStorage.setItem('token', access_token);
-    console.log('Token stored successfully');
-
     return response.data;
   } catch (error) {
-    // Log detailed error information
-    console.error('Login error:', {
-      error,
-      isAxiosError: axios.isAxiosError(error),
-      status: axios.isAxiosError(error) ? error.response?.status : null,
-      data: axios.isAxiosError(error) ? error.response?.data : null,
-      formData: formData.toString() // Now formData is in scope
-    });
-
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
       const data = error.response?.data;
@@ -163,10 +140,7 @@ export const loginUser = async (username: string, password: string): Promise<Log
       }
 
       if (status === 422) {
-        // Log the validation errors
-        console.error('Validation errors:', data);
-        const errorMessage = data?.detail || 'Invalid login data';
-        throw new Error(errorMessage);
+        throw new Error(data?.detail || 'Invalid login data');
       }
 
       throw new Error(data?.detail || 'Login failed. Please try again.');
