@@ -109,26 +109,69 @@ api.interceptors.response.use(
 
 // Authentication functions
 export const loginUser = async (username: string, password: string): Promise<LoginResponse> => {
-  const formData = new URLSearchParams();
-  formData.append('username', username);
-  formData.append('password', password);
+  try {
+    // Create form data using URLSearchParams
+    const formData = new URLSearchParams();
+    formData.append('username', username);
+    formData.append('password', password);
 
-  const response = await api.post<LoginResponse>('/token', formData, {
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-  });
-  
-  const { access_token } = response.data;
-  if (!access_token) {
-    throw new Error('No access token received from server');
+    console.log('Login request data:', {
+      username,
+      password: '***' // Masked for security
+    });
+
+    const response = await api.post<LoginResponse>('/token', formData, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    });
+    
+    console.log('Login response:', {
+      status: response.status,
+      headers: response.headers
+    });
+
+    const { access_token } = response.data;
+    if (!access_token) {
+      console.error('No access token in response:', response.data);
+      throw new Error('No access token received from server');
+    }
+    
+    // Store token and log for debugging
+    localStorage.setItem('token', access_token);
+    console.log('Token stored in localStorage');
+    
+    return response.data;
+  } catch (error) {
+    console.error('Login error:', {
+      error,
+      isAxiosError: axios.isAxiosError(error),
+      status: axios.isAxiosError(error) ? error.response?.status : null,
+      data: axios.isAxiosError(error) ? error.response?.data : null
+    });
+
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      const data = error.response?.data;
+
+      if (status === 401) {
+        throw new Error('Invalid username or password');
+      }
+
+      if (status === 422) {
+        const validationErrors = data?.detail || data?.errors || data;
+        const errorMessage = typeof validationErrors === 'object' 
+          ? Object.entries(validationErrors)
+              .map(([key, value]) => `${key}: ${value}`)
+              .join(', ')
+          : 'Invalid login data';
+        throw new Error(errorMessage);
+      }
+
+      throw new Error(data?.detail || 'Login failed. Please try again.');
+    }
+    throw error;
   }
-  
-  // Store token and log for debugging
-  localStorage.setItem('token', access_token);
-  console.log('Token stored in localStorage:', access_token);
-  
-  return response.data;
 };
 
 export const registerUser = async (data: UserData) => {
