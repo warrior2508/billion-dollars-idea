@@ -37,7 +37,7 @@ interface OrganizationData {
 }
 
 // Use environment variable for API base URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://f663-51-20-140-171.ngrok-free.app";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Create axios instance with base configuration
 const api = axios.create({
@@ -117,7 +117,7 @@ export const loginUser = async (username: string, password: string): Promise<Log
   console.log("Form data:", formData.toString());
 
   try {
-    const response = await axios.post<LoginResponse>("/token", formData, {
+    const response = await axios.post<LoginResponse>(`${API_BASE_URL}/token`, formData, {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
