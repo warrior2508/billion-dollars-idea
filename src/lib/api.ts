@@ -114,6 +114,7 @@ export const loginUser = async (username: string, password: string): Promise<Log
     const formData = new URLSearchParams();
     formData.append('username', username);
     formData.append('password', password);
+    // Optional: formData.append('grant_type', 'password');
 
     console.log('Login request data:', {
       username,
@@ -124,6 +125,8 @@ export const loginUser = async (username: string, password: string): Promise<Log
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
+      // Ensure axios doesn't try to JSON stringify the form data
+      transformRequest: [(data) => data],
     });
     
     console.log('Login response:', {
