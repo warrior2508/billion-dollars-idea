@@ -43,14 +43,15 @@ const Models = () => {
       // Ensure data is an array before setting state
       if (!Array.isArray(data)) {
         console.error('Received non-array data from getModels:', data);
-        toast("Invalid data format received from server", {
+        const errorMessage = 'Invalid data format received from server';
+        toast(errorMessage, {
           icon: "❌",
           style: {
             background: "#FEE2E2",
             color: "#991B1B",
           },
         });
-        setError('Invalid data format received from server');
+        setError(errorMessage);
         setModels([]);
         return;
       }
@@ -71,7 +72,8 @@ const Models = () => {
       });
 
       if (validModels.length !== data.length) {
-        toast(`Filtered out ${data.length - validModels.length} invalid model entries`, {
+        const warningMessage = `Filtered out ${data.length - validModels.length} invalid model entries`;
+        toast(warningMessage, {
           icon: "⚠️",
           style: {
             background: "#FEF3C7",
@@ -83,7 +85,10 @@ const Models = () => {
       setModels(validModels);
     } catch (err: any) {
       console.error('Error fetching models:', err);
-      const errorMessage = err.message || 'Failed to fetch models';
+      const errorMessage = typeof err === 'string' ? err : 
+                          err.message || 
+                          err.response?.data?.detail || 
+                          'Failed to fetch models';
       toast(errorMessage, {
         icon: "❌",
         style: {

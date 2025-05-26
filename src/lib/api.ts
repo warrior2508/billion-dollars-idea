@@ -151,10 +151,15 @@ export const getModels = async () => {
   try {
     const token = localStorage.getItem('token');
     if (!token) {
+      console.error('Authentication token missing');
       throw new Error('No authentication token found');
     }
 
     console.log('Making request to:', `${API_BASE_URL}/models/`);
+    console.log('Request headers:', {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
+    });
     
     const response = await api.get('/models/', {
       headers: {
@@ -163,7 +168,14 @@ export const getModels = async () => {
       }
     });
 
+    console.log('Response received:', {
+      status: response.status,
+      headers: response.headers,
+      data: response.data
+    });
+
     if (!response.data) {
+      console.error('Empty response data received');
       throw new Error('No data received from server');
     }
 
@@ -171,20 +183,36 @@ export const getModels = async () => {
            (response.data.models || []);
            
   } catch (error) {
-    console.error('getModels error:', error);
+    console.error('getModels error details:', {
+      error,
+      isAxiosError: axios.isAxiosError(error),
+      status: axios.isAxiosError(error) ? error.response?.status : null,
+      data: axios.isAxiosError(error) ? error.response?.data : null,
+      headers: axios.isAxiosError(error) ? error.response?.headers : null,
+      config: axios.isAxiosError(error) ? error.config : null
+    });
+
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
       const data = error.response?.data;
       
       if (status === 401) {
+        console.error('Authentication failed - redirecting to login');
         localStorage.removeItem('token');
         window.location.href = '/login';
         throw new Error('Authentication failed. Please log in again.');
       }
       
       if (status === 422) {
-        console.error('Validation error:', data);
-        throw new Error(data?.detail || 'Invalid request format');
+        const validationErrors = data?.detail || data?.errors || data;
+        console.error('Validation error details:', validationErrors);
+        // Convert validation errors to a readable string
+        const errorMessage = typeof validationErrors === 'object' 
+          ? Object.entries(validationErrors)
+              .map(([key, value]) => `${key}: ${value}`)
+              .join(', ')
+          : 'Invalid request format';
+        throw new Error(errorMessage);
       }
       
       throw new Error(data?.detail || 'Failed to fetch models');
