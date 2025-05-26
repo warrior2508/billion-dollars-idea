@@ -109,32 +109,28 @@ api.interceptors.response.use(
 
 // Authentication functions
 export const loginUser = async (username: string, password: string): Promise<LoginResponse> => {
-  try {
-    // Create form data using URLSearchParams
-    const formData = new URLSearchParams();
-    formData.append('username', username); // Using username field as required by FastAPI
-    formData.append('password', password);
+  // Create form data using URLSearchParams
+  const formData = new URLSearchParams();
+  formData.append('username', username);
+  formData.append('password', password);
 
+  try {
     // Log the form data string to verify format
     console.log('Login form data:', formData.toString());
-
-    console.log('Login request data:', {
-      username,
-      password: '***' // Masked for security
-    });
 
     const response = await api.post<LoginResponse>('/token', formData, {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
+      withCredentials: false,
       // Ensure axios doesn't try to JSON stringify the form data
       transformRequest: [(data) => data],
-      withCredentials: false // Explicitly set to false
     });
-    
+
+    // Log the response for debugging
     console.log('Login response:', {
       status: response.status,
-      headers: response.headers
+      data: response.data
     });
 
     const { access_token } = response.data;
@@ -142,18 +138,20 @@ export const loginUser = async (username: string, password: string): Promise<Log
       console.error('No access token in response:', response.data);
       throw new Error('No access token received from server');
     }
-    
-    // Store token and log for debugging
+
+    // Store token
     localStorage.setItem('token', access_token);
-    console.log('Token stored in localStorage');
-    
+    console.log('Token stored successfully');
+
     return response.data;
   } catch (error) {
+    // Log detailed error information
     console.error('Login error:', {
       error,
       isAxiosError: axios.isAxiosError(error),
       status: axios.isAxiosError(error) ? error.response?.status : null,
-      data: axios.isAxiosError(error) ? error.response?.data : null
+      data: axios.isAxiosError(error) ? error.response?.data : null,
+      formData: formData.toString() // Now formData is in scope
     });
 
     if (axios.isAxiosError(error)) {
@@ -165,12 +163,9 @@ export const loginUser = async (username: string, password: string): Promise<Log
       }
 
       if (status === 422) {
-        const validationErrors = data?.detail || data?.errors || data;
-        const errorMessage = typeof validationErrors === 'object' 
-          ? Object.entries(validationErrors)
-              .map(([key, value]) => `${key}: ${value}`)
-              .join(', ')
-          : 'Invalid login data';
+        // Log the validation errors
+        console.error('Validation errors:', data);
+        const errorMessage = data?.detail || 'Invalid login data';
         throw new Error(errorMessage);
       }
 
