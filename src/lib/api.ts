@@ -112,9 +112,11 @@ export const loginUser = async (username: string, password: string): Promise<Log
   try {
     // Create form data using URLSearchParams
     const formData = new URLSearchParams();
-    formData.append('username', username);
+    formData.append('username', username); // Using username field as required by FastAPI
     formData.append('password', password);
-    // Optional: formData.append('grant_type', 'password');
+
+    // Log the form data string to verify format
+    console.log('Login form data:', formData.toString());
 
     console.log('Login request data:', {
       username,
@@ -127,6 +129,7 @@ export const loginUser = async (username: string, password: string): Promise<Log
       },
       // Ensure axios doesn't try to JSON stringify the form data
       transformRequest: [(data) => data],
+      withCredentials: false // Explicitly set to false
     });
     
     console.log('Login response:', {
