@@ -108,43 +108,26 @@ api.interceptors.response.use(
 );
 
 // Authentication functions
-export const loginUser = async (username: string, password: string): Promise<LoginResponse> => {
-  // Create the form data exactly as it appears in the working curl command
+export const loginUser = async (username: string, password: string) => {
   const formData = new URLSearchParams();
-  formData.append('username', username);
-  formData.append('password', password);
-  formData.append('grant_type', 'password');
+  formData.append("username", username);
+  formData.append("password", password);
+  formData.append("grant_type", "password");
+
+  console.log("Form data:", formData.toString());
 
   try {
-    const response = await api.post<LoginResponse>('/token', formData, {
+    const response = await axios.post("/token", formData, {
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-      withCredentials: false
+      withCredentials: false, // Required by FastAPI OAuth2 flow
+      transformRequest: [(data) => data], // prevents JSON stringify
     });
 
-    const { access_token } = response.data;
-    if (!access_token) {
-      throw new Error('No access token received from server');
-    }
-
-    localStorage.setItem('token', access_token);
     return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      const status = error.response?.status;
-      const data = error.response?.data;
-
-      if (status === 401) {
-        throw new Error('Invalid username or password');
-      }
-
-      if (status === 422) {
-        throw new Error(data?.detail || 'Invalid login data');
-      }
-
-      throw new Error(data?.detail || 'Login failed. Please try again.');
-    }
+  } catch (error: any) {
+    console.error("Login error:", error);
     throw error;
   }
 };

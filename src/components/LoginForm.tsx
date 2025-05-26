@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser } from '@/lib/api';
+import { AxiosError } from 'axios';
 
 export function LoginForm() {
   const [username, setUsername] = useState('');
@@ -17,8 +18,12 @@ export function LoginForm() {
     try {
       await loginUser(username, password);
       navigate('/dashboard');
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to login. Please try again.');
+    } catch (err) {
+      if (err instanceof AxiosError) {
+        setError(err.response?.data?.detail || 'Failed to login. Please try again.');
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
