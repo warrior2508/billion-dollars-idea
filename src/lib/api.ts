@@ -108,7 +108,7 @@ api.interceptors.response.use(
 );
 
 // Authentication functions
-export const loginUser = async (username: string, password: string) => {
+export const loginUser = async (username: string, password: string): Promise<LoginResponse> => {
   const formData = new URLSearchParams();
   formData.append("username", username);
   formData.append("password", password);
@@ -117,7 +117,7 @@ export const loginUser = async (username: string, password: string) => {
   console.log("Form data:", formData.toString());
 
   try {
-    const response = await axios.post("/token", formData, {
+    const response = await axios.post<LoginResponse>("/token", formData, {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
@@ -126,7 +126,7 @@ export const loginUser = async (username: string, password: string) => {
     });
 
     return response.data;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Login error:", error);
     throw error;
   }
