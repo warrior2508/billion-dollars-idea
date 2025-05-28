@@ -36,39 +36,70 @@ interface OrganizationData {
   description: string;
 }
 
-// API base
+// Use environment variable for API base URL
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// Axios instance
+// Create axios instance with base configuration
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    // Add ngrok skip browser warning header
+    'ngrok-skip-browser-warning': 'true'
   },
   timeout: 10000,
-  responseType: 'json',
+  responseType: 'json'
 });
 
-// Auth interceptor
+// Add request interceptor to add auth token
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = Bearer ${token};
   }
+  
+  // Ensure proper headers for JSON and ngrok bypass
+  config.headers['Accept'] = 'application/json';
+  config.headers['Content-Type'] = 'application/json';
+  config.headers['ngrok-skip-browser-warning'] = 'true';
+  
+  // Log request details for debugging
+  console.log('Request config:', {
+    url: config.url,
+    method: config.method,
+    headers: config.headers,
+    baseURL: config.baseURL
+  });
+  
   return config;
 });
 
-// Response debugging
+// Add response interceptor for debugging
 api.interceptors.response.use(
   (response) => {
+    // Check if response is HTML (ngrok warning page)
     if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
       console.error('Received HTML response:', response.data);
       throw new Error('Received HTML response instead of JSON. Please check your API endpoint.');
     }
+    
+    console.log('Response received:', {
+      status: response.status,
+      headers: response.headers,
+      data: response.data
+    });
     return response;
   },
   (error) => {
+    console.error('API Error:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      headers: error.response?.headers,
+      config: error.config
+    });
+    
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
       window.location.href = '/login';
@@ -77,21 +108,27 @@ api.interceptors.response.use(
   }
 );
 
-// AUTH
+// Authentication functions
 export const loginUser = async (username: string, password: string): Promise<LoginResponse> => {
   const formData = new URLSearchParams();
   formData.append("username", username);
   formData.append("password", password);
   formData.append("grant_type", "password");
 
+  console.log("Form data:", formData.toString());
+
   try {
     const response = await axios.post<LoginResponse>(${API_BASE_URL}/token, formData, {
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "ngrok-skip-browser-warning": "true"
+      },
       withCredentials: false,
-      transformRequest: [(data) => data],
+      transformRequest: [(data) => data]
     });
+
     return response.data;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Login error:", error);
     throw error;
   }
@@ -112,41 +149,76 @@ export const registerUser = async (data: UserData) => {
   }
 };
 
-// MODELS
+// Model management functions
 export const getModels = async () => {
   try {
     const token = localStorage.getItem('token');
-    if (!token) throw new Error('No authentication token found');
+    if (!token) {
+      console.error('Authentication token missing');
+      throw new Error('No authentication token found');
+    }
 
+    console.log('Making request to:', ${API_BASE_URL}/models/);
+    console.log('Request headers:', {
+      'Authorization': Bearer ${token},
+      'Accept': 'application/json',
+      'ngrok-skip-browser-warning': 'true'
+    });
+    
     const response = await api.get('/models/', {
       headers: {
         'Authorization': Bearer ${token},
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
       }
     });
 
-    if (!response.data) throw new Error('No data received from server');
+    console.log('Response received:', {
+      status: response.status,
+      headers: response.headers,
+      data: response.data
+    });
 
-    return Array.isArray(response.data) ? response.data : (response.data.models || []);
+    if (!response.data) {
+      console.error('Empty response data received');
+      throw new Error('No data received from server');
+    }
+
+    return Array.isArray(response.data) ? response.data : 
+           (response.data.models || []);
+           
   } catch (error) {
+    console.error('getModels error details:', {
+      error,
+      isAxiosError: axios.isAxiosError(error),
+      status: axios.isAxiosError(error) ? error.response?.status : null,
+      data: axios.isAxiosError(error) ? error.response?.data : null,
+      headers: axios.isAxiosError(error) ? error.response?.headers : null,
+      config: axios.isAxiosError(error) ? error.config : null
+    });
+
     if (axios.isAxiosError(error)) {
       const status = error.response?.status;
       const data = error.response?.data;
-
+      
       if (status === 401) {
+        console.error('Authentication failed - redirecting to login');
         localStorage.removeItem('token');
         window.location.href = '/login';
         throw new Error('Authentication failed. Please log in again.');
       }
-
+      
       if (status === 422) {
         const validationErrors = data?.detail || data?.errors || data;
-        const errorMessage = typeof validationErrors === 'object'
-          ? Object.entries(validationErrors).map(([key, val]) => ${key}: ${val}).join(', ')
+        console.error('Validation error details:', validationErrors);
+        const errorMessage = typeof validationErrors === 'object' 
+          ? Object.entries(validationErrors)
+              .map(([key, value]) => ${key}: ${value})
+              .join(', ')
           : 'Invalid request format';
         throw new Error(errorMessage);
       }
-
+      
       throw new Error(data?.detail || 'Failed to fetch models');
     }
     throw error;
@@ -154,15 +226,28 @@ export const getModels = async () => {
 };
 
 export const uploadModel = async (data: ModelData) => {
+  console.log('uploadModel received data:', data);
   try {
     const response = await api.post('/models/', data, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
+      },
+      withCredentials: true
     });
     return response.data;
-  } catch (error) {
+  } catch (error: unknown) {
     const axiosError = error as AxiosError;
-    if (axios.isAxiosError(axiosError)) {
-      throw new Error(axiosError.response?.data?.detail || 'Failed to upload model.');
+    console.error('Upload model error details:', {
+      error: String(error),
+      response: axiosError?.response?.data,
+      status: axiosError?.response?.status,
+      headers: axiosError?.response?.headers
+    });
+    if (axios.isAxiosError(error)) {
+      const errorMessage = error.response?.data?.detail || 'Failed to upload model.';
+      console.error('Validation error:', errorMessage);
+      throw new Error(errorMessage);
     }
     throw error;
   }
