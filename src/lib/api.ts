@@ -162,7 +162,7 @@ export const getModels = async () => {
       'Accept': 'application/json'
     });
     
-    const response = await api.get('/models/', {
+    const response = await api.get('/models', {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json'
@@ -225,7 +225,7 @@ export const getModels = async () => {
 export const uploadModel = async (data: ModelData) => {
   console.log('uploadModel received data:', data);
   try {
-    const response = await api.post('/models/', data, {
+    const response = await api.post('/models', data, {
       headers: {
         'Content-Type': 'application/json',
       },
