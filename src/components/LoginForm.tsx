@@ -16,8 +16,9 @@ export function LoginForm() {
     setLoading(true);
 
     try {
-      await loginUser(username, password);
-      navigate('/dashboard');
+      const res = await loginUser(username, password);
+      localStorage.setItem('token', res.access_token); // ✅ Store token
+      navigate('/dashboard'); // ✅ Redirect after storing token
     } catch (err) {
       if (err instanceof AxiosError) {
         setError(err.response?.data?.detail || 'Failed to login. Please try again.');
@@ -74,4 +75,4 @@ export function LoginForm() {
       </form>
     </div>
   );
-} 
+}
