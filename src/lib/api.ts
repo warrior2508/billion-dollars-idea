@@ -45,7 +45,6 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    // Add ngrok skip browser warning header
     'ngrok-skip-browser-warning': 'true'
   },
   timeout: 10000,
@@ -111,17 +110,17 @@ api.interceptors.response.use(
 // Authentication functions
 export const loginUser = async (username: string, password: string): Promise<LoginResponse> => {
   const formData = new URLSearchParams();
-  formData.append("username", username);
-  formData.append("password", password);
-  formData.append("grant_type", "password");
+  formData.append('username', username);
+  formData.append('password', password);
+  formData.append('grant_type', 'password');
 
-  console.log("Form data:", formData.toString());
+  console.log('Form data:', formData.toString());
 
   try {
     const response = await axios.post<LoginResponse>(${API_BASE_URL}/token, formData, {
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "ngrok-skip-browser-warning": "true"
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'ngrok-skip-browser-warning': 'true'
       },
       withCredentials: false,
       transformRequest: [(data) => data]
@@ -129,7 +128,7 @@ export const loginUser = async (username: string, password: string): Promise<Log
 
     return response.data;
   } catch (error: unknown) {
-    console.error("Login error:", error);
+    console.error('Login error:', error);
     throw error;
   }
 };
@@ -184,8 +183,7 @@ export const getModels = async () => {
       throw new Error('No data received from server');
     }
 
-    return Array.isArray(response.data) ? response.data : 
-           (response.data.models || []);
+    return Array.isArray(response.data) ? response.data : (response.data.models || []);
            
   } catch (error) {
     console.error('getModels error details:', {
@@ -245,7 +243,7 @@ export const uploadModel = async (data: ModelData) => {
       headers: axiosError?.response?.headers
     });
     if (axios.isAxiosError(error)) {
-      const errorMessage = error.response?.data?.detail || 'Failed to upload model.';
+      const errorMessage = axiosError.response?.data?.detail || 'Failed to upload model.';
       console.error('Validation error:', errorMessage);
       throw new Error(errorMessage);
     }
@@ -256,7 +254,7 @@ export const uploadModel = async (data: ModelData) => {
 export const deployModel = async (modelId: string, cloudProvider: 'AWS' | 'GCP' | 'Azure') => {
   const response = await api.post('/deployments/', {
     model_id: modelId,
-    cloud_provider: cloudProvider,
+    cloud_provider: cloudProvider
   });
   return response.data;
 };
