@@ -45,9 +45,10 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'ngrok-skip-browser-warning': 'true'
   },
+  // Add timeout and other production settings
   timeout: 10000,
+  // Ensure we get JSON responses
   responseType: 'json'
 });
 
@@ -55,13 +56,12 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
-    config.headers.Authorization = Bearer ${token};
+    config.headers.Authorization = `Bearer ${token}`;
   }
   
-  // Ensure proper headers for JSON and ngrok bypass
+  // Ensure proper headers for JSON
   config.headers['Accept'] = 'application/json';
   config.headers['Content-Type'] = 'application/json';
-  config.headers['ngrok-skip-browser-warning'] = 'true';
   
   // Log request details for debugging
   console.log('Request config:', {
@@ -77,7 +77,7 @@ api.interceptors.request.use((config) => {
 // Add response interceptor for debugging
 api.interceptors.response.use(
   (response) => {
-    // Check if response is HTML (ngrok warning page)
+    // Check if response is HTML
     if (typeof response.data === 'string' && response.data.includes('<!DOCTYPE html>')) {
       console.error('Received HTML response:', response.data);
       throw new Error('Received HTML response instead of JSON. Please check your API endpoint.');
@@ -110,25 +110,24 @@ api.interceptors.response.use(
 // Authentication functions
 export const loginUser = async (username: string, password: string): Promise<LoginResponse> => {
   const formData = new URLSearchParams();
-  formData.append('username', username);
-  formData.append('password', password);
-  formData.append('grant_type', 'password');
+  formData.append("username", username);
+  formData.append("password", password);
+  formData.append("grant_type", "password");
 
-  console.log('Form data:', formData.toString());
+  console.log("Form data:", formData.toString());
 
   try {
-    const response = await axios.post<LoginResponse>(${API_BASE_URL}/token, formData, {
+    const response = await axios.post<LoginResponse>(`${API_BASE_URL}/token`, formData, {
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'ngrok-skip-browser-warning': 'true'
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-      withCredentials: false,
-      transformRequest: [(data) => data]
+      withCredentials: false, // Required by FastAPI OAuth2 flow
+      transformRequest: [(data) => data], // prevents JSON stringify
     });
 
     return response.data;
   } catch (error: unknown) {
-    console.error('Login error:', error);
+    console.error("Login error:", error);
     throw error;
   }
 };
@@ -137,7 +136,7 @@ export const registerUser = async (data: UserData) => {
   try {
     const response = await api.post('/users/', {
       ...data,
-      organization_id: data.organization_id || 0
+      organization_id: data.organization_id || 0  // American spelling
     });
     return response.data;
   } catch (error) {
@@ -157,18 +156,16 @@ export const getModels = async () => {
       throw new Error('No authentication token found');
     }
 
-    console.log('Making request to:', ${API_BASE_URL}/models/);
+    console.log('Making request to:', `${API_BASE_URL}/models/`);
     console.log('Request headers:', {
-      'Authorization': Bearer ${token},
-      'Accept': 'application/json',
-      'ngrok-skip-browser-warning': 'true'
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/json'
     });
     
     const response = await api.get('/models/', {
       headers: {
-        'Authorization': Bearer ${token},
-        'Accept': 'application/json',
-        'ngrok-skip-browser-warning': 'true'
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
       }
     });
 
@@ -183,7 +180,8 @@ export const getModels = async () => {
       throw new Error('No data received from server');
     }
 
-    return Array.isArray(response.data) ? response.data : (response.data.models || []);
+    return Array.isArray(response.data) ? response.data : 
+           (response.data.models || []);
            
   } catch (error) {
     console.error('getModels error details:', {
@@ -209,9 +207,10 @@ export const getModels = async () => {
       if (status === 422) {
         const validationErrors = data?.detail || data?.errors || data;
         console.error('Validation error details:', validationErrors);
+        // Convert validation errors to a readable string
         const errorMessage = typeof validationErrors === 'object' 
           ? Object.entries(validationErrors)
-              .map(([key, value]) => ${key}: ${value})
+              .map(([key, value]) => `${key}: ${value}`)
               .join(', ')
           : 'Invalid request format';
         throw new Error(errorMessage);
@@ -229,7 +228,6 @@ export const uploadModel = async (data: ModelData) => {
     const response = await api.post('/models/', data, {
       headers: {
         'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': 'true'
       },
       withCredentials: true
     });
@@ -243,7 +241,8 @@ export const uploadModel = async (data: ModelData) => {
       headers: axiosError?.response?.headers
     });
     if (axios.isAxiosError(error)) {
-      const errorMessage = axiosError.response?.data?.detail || 'Failed to upload model.';
+      // Pass backend validation errors up for toast display
+      const errorMessage = error.response?.data?.detail || 'Failed to upload model.';
       console.error('Validation error:', errorMessage);
       throw new Error(errorMessage);
     }
@@ -254,27 +253,27 @@ export const uploadModel = async (data: ModelData) => {
 export const deployModel = async (modelId: string, cloudProvider: 'AWS' | 'GCP' | 'Azure') => {
   const response = await api.post('/deployments/', {
     model_id: modelId,
-    cloud_provider: cloudProvider
+    cloud_provider: cloudProvider,
   });
   return response.data;
 };
 
 export const getModelMetrics = async (modelId: string) => {
-  const response = await api.get(/models/${modelId}/metrics);
+  const response = await api.get(`/models/${modelId}/metrics`);
   return response.data;
 };
 
 export const scaleModel = async (modelId: string, scaleData: ScaleData) => {
-  const response = await api.post(/models/${modelId}/scale, scaleData);
+  const response = await api.post(`/models/${modelId}/scale`, scaleData);
   return response.data;
 };
 
 export const deleteModel = async (modelId: string) => {
-  const response = await api.delete(/models/${modelId});
+  const response = await api.delete(`/models/${modelId}`);
   return response.data;
 };
 
 export const createOrganization = async (orgData: OrganizationData) => {
   const response = await api.post('/organizations/', orgData);
   return response.data;
-};
+}; 
