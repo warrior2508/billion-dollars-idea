@@ -16,7 +16,7 @@ export const LineData: ChartData<"line"> = {
   labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"],
   datasets: [
     {
-      label: "Days",
+      label: "LLM",
       data: [30, 20, 10, 1, 12, 18, 0],
       borderColor: "blue",
       backgroundColor: "rgba(0, 0, 255, 0.2)",
@@ -86,7 +86,7 @@ export const BarChartData: ChartData<"bar"> = {
   labels: ["Jan", "Feb", "Mar"],
   datasets: [
     {
-      label: "Sales",
+      label: "Tokens",
       data: [4000, 3000, 5000],
       backgroundColor: "rgb(63, 81, 181)",
       borderColor: "rgb(63, 81, 181)",
@@ -104,7 +104,7 @@ export const BarOptions: ChartOptions<"bar"> = {
     },
     title: {
       display: true,
-      text: "Monthly Sales Data",
+      text: "Monthly Health Stats",
     },
   },
   scales: {
@@ -168,7 +168,7 @@ export const LineData2: ChartData<"line"> = {
   labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"],
   datasets: [
     {
-      label: "Days",
+      label: "Vision",
       data: [30, 25, 20, 18, 22, 28, 20],
       borderColor: "rgb(57, 73, 171)",
       backgroundColor: "rgb(57, 73, 171)",
@@ -178,7 +178,7 @@ export const LineData2: ChartData<"line"> = {
       pointHoverRadius: 6,
     },
     {
-      label: "Days",
+      label: "Speech",
       data: [15, 28, 10, 8, 14, 18, 20],
       borderColor: "rgb(233, 30, 99)",
       backgroundColor: "rgb(233, 30, 99)",
@@ -188,7 +188,7 @@ export const LineData2: ChartData<"line"> = {
       pointHoverRadius: 6,
     },
     {
-      label: "Days",
+      label: "Agent",
       data: [25, 24, 26, 16, 12, 23, 27],
       borderColor: "rgb(0, 150, 136)",
       backgroundColor: "rgb(0, 150, 136)",
@@ -214,7 +214,7 @@ export const MixBarOptions = {
     },
     title: {
       display: true,
-      text: "Sales and Revenue Overview",
+      text: "Cost and Performance Overview",
     },
   },
   scales: {
@@ -229,7 +229,7 @@ export const MixBarData = {
   datasets: [
     {
       type: "bar" as const, // Bar Chart
-      label: "Sales",
+      label: "Performance",
       data: [400, 300, 500, 700, 600],
       backgroundColor: "rgba(54, 162, 235, 0.6)",
       borderColor: "rgba(54, 162, 235, 1)",
@@ -237,7 +237,7 @@ export const MixBarData = {
     },
     {
       type: "line" as const, // Line Chart
-      label: "Revenue",
+      label: "Cost",
       data: [320, 280, 450, 650, 580],
       borderColor: "rgba(255, 99, 132, 1)",
       backgroundColor: "rgba(255, 99, 132, 0.5)",

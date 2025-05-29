@@ -99,7 +99,7 @@ const Dashboard = () => {
           <div className="grid grid-cols-3 grid-rows-2 gap-5 items-center pb-5">
             <div className=" bg-white row-span-2 rounded-md flex flex-col gap-3 px-10 py-5">
               <div className="flex justify-between p-5 ">
-                <h1 className="text-xl font-semibold"> Open AI </h1>
+                <h1 className="text-xl font-semibold"> Overall Cost </h1>
                 <button className="text-base border-2 px-2 py-1 rounded-md tracking-tight cursor-pointer text-indigo-600">
                   {" "}
                   View All{" "}
@@ -221,7 +221,7 @@ const Dashboard = () => {
             <div className="bg-white rounded-md px-7 py-8">
               <h1 className="font-semibold text-lg">
                 {" "}
-                Cost threshold Reached for Model{" "}
+                Cost and Performance Threshold alert for Model{" "}
               </h1>
               <div>
                 <RChart type="bar" data={MixBarData} options={MixBarOptions} />
