@@ -1,344 +1,120 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { getModels } from '@/lib/api';
-import { ModelUploadModal } from '@/components/ModelUploadModal';
-import { DeployModelDropdown } from '@/components/DeployModelDropdown';
-import { Toaster } from 'react-hot-toast';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  BarChartOptions,
-  CostPerHourData,
-  PerformanceData,
-  PerformanceDataOptions,
-  StackBarChartData,
-} from "@/constant/LineChart.data";
-import { Bar, Doughnut, Line } from "react-chartjs-2";
-import { toast } from 'react-hot-toast';
 
 interface Model {
-  id: string;
+  id: number;
   name: string;
-  description?: string;
-  status: 'ACTIVE' | 'STOPPED' | 'PENDING';
-  performance: number;
+  description: string;
+  model_type: string;
+  version: string;
+  docker_image: string;
+  status: string;
+  config: any;
+  resource_limits: any;
+  created_at: string;
+  metrics?: {
+    latency: string;
+    throughput: string;
+    accuracy: string;
+  };
 }
 
-const Models = () => {
+// Mock metrics generator
+const generateMockMetrics = () => ({
+  latency: (Math.random() * 500 + 100).toFixed(2) + ' ms',
+  throughput: (Math.random() * 50 + 10).toFixed(2) + ' r/s',
+  accuracy: (Math.random() * 10 + 90).toFixed(2) + '%'
+});
+
+export default function ModelPage() {
   const [models, setModels] = useState<Model[]>([]);
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const fetchModels = async () => {
-    try {
+  useEffect(() => {
+    const fetchModels = async () => {
       setLoading(true);
       setError('');
-      const data = await getModels();
-      
-      // Ensure data is an array before setting state
-      if (!Array.isArray(data)) {
-        console.error('Received non-array data from getModels:', data);
-        const errorMessage = 'Invalid data format received from server';
-        toast(errorMessage, {
-          icon: "❌",
-          style: {
-            background: "#FEE2E2",
-            color: "#991B1B",
-          },
-        });
-        setError(errorMessage);
-        setModels([]);
-        return;
+      try {
+        const data = await getModels();
+
+        const validModels = data.filter((model: any) =>
+          model.name && model.model_type && model.version && model.docker_image
+        );
+
+        const modelsWithMetrics = validModels.map((model: any) => ({
+          ...model,
+          metrics: generateMockMetrics()
+        }));
+
+        setModels(modelsWithMetrics);
+      } catch (err: any) {
+        console.error('Error loading models:', err);
+        setError('Failed to load models. Please try again.');
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // Validate each model object has required fields
-      const validModels = data.filter(model => {
-        const isValid = model && 
-          typeof model === 'object' && 
-          'id' in model && 
-          'name' in model && 
-          'status' in model && 
-          'performance' in model;
-        
-        if (!isValid) {
-          console.warn('Invalid model object:', model);
-        }
-        return isValid;
-      });
-
-      if (validModels.length !== data.length) {
-        const warningMessage = `Filtered out ${data.length - validModels.length} invalid model entries`;
-        toast(warningMessage, {
-          icon: "⚠️",
-          style: {
-            background: "#FEF3C7",
-            color: "#92400E",
-          },
-        });
-      }
-
-      setModels(validModels);
-    } catch (err: any) {
-      console.error('Error fetching models:', err);
-      const errorMessage = typeof err === 'string' ? err : 
-                          err.message || 
-                          err.response?.data?.detail || 
-                          'Failed to fetch models';
-      toast(errorMessage, {
-        icon: "❌",
-        style: {
-          background: "#FEE2E2",
-          color: "#991B1B",
-        },
-      });
-      setError(errorMessage);
-      setModels([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
     fetchModels();
   }, []);
 
-  const renderSkeletonLoader = () => (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 px-10">
-      {[...Array(4)].map((_, index) => (
-        <div key={index} className="bg-white rounded-lg shadow-md p-4 animate-pulse">
-          <div className="flex items-center gap-2 justify-between">
-            <div className="w-10 h-10 bg-gray-200 rounded-full" />
-            <div className="w-20 h-6 bg-gray-200 rounded" />
-          </div>
-          <div className="mt-4 space-y-3">
-            <div className="h-6 bg-gray-200 rounded w-3/4" />
-            <div className="h-4 bg-gray-200 rounded w-1/2" />
-            <div className="h-8 bg-gray-200 rounded w-full" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
-  const renderEmptyState = () => (
-    <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-      <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-        <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-        </svg>
-      </div>
-      <h3 className="text-xl font-semibold text-gray-900 mb-2">No models found</h3>
-      <p className="text-gray-600 mb-6">Upload your first model to get started!</p>
-      <button
-        onClick={() => setIsUploadModalOpen(true)}
-        className="bg-indigo-700 px-6 py-3 rounded-lg text-white font-semibold text-lg hover:bg-indigo-800 transition-colors"
-      >
-        Deploy New Model
-      </button>
-    </div>
-  );
-
   return (
-    <div className="bg-gray-100 min-h-screen">
-      <Toaster position="top-right" />
-      <div className="max-w-[1320px] mx-auto flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-10 justify-start px-4 sm:px-10 py-4 text-gray-900">
-          <h1 className="font-bold text-2xl">Models</h1>
-          <input
-            type="text"
-            placeholder="Search models, costs, alerts"
-            className="border-2 border-gray-500 rounded-lg px-5 py-2 text-md w-full sm:w-60 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors"
-          />
-        </div>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Your Uploaded Models</h1>
 
-        {error && (
-          <div className="mx-4 sm:mx-10 p-3 bg-red-100 text-red-700 rounded-md">
-            {error}
-          </div>
-        )}
+      {loading && <p>Loading models...</p>}
+      {error && <p className="text-red-600">{error}</p>}
 
-        {loading ? (
-          renderSkeletonLoader()
-        ) : models.length === 0 ? (
-          renderEmptyState()
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 px-4 sm:px-10">
-            {Array.isArray(models) && models.map((model) => (
-              <ModelCard
-                key={model.id}
-                icon={"/icons/chatgpt.png"}
-                title={model.name}
-                state={model.status}
-                value={`${model.performance}%`}
-                isPositive={model.status === 'ACTIVE'}
-                className={model.status === 'ACTIVE' ? 'bg-green-100' : 'bg-red-50'}
-                deployButton={
-                  <DeployModelDropdown
-                    modelId={model.id}
-                    modelName={model.name}
-                    onSuccess={fetchModels}
-                  />
-                }
-              />
-            ))}
-            <div className="bg-transparent flex justify-center items-center">
-              <button
-                onClick={() => setIsUploadModalOpen(true)}
-                className="bg-indigo-700 px-5 py-5 rounded-lg text-white font-semibold text-xl cursor-pointer hover:bg-indigo-800 transition-colors w-full"
-              >
-                Deploy New Model
-              </button>
-            </div>
-          </div>
-        )}
+      {!loading && models.length === 0 && <p>No models found.</p>}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 px-4 sm:px-10 mb-5">
-          <div className="bg-white row-span-2 col-span-2 py-5 px-4 sm:px-8 rounded-lg">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <h3 className="text-xl font-bold text-gray-900">Cost per hour</h3>
-              <div>
-                <Select>
-                  <SelectTrigger className="w-[180px] text-black">
-                    <SelectValue placeholder="Theme" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="light">Light</SelectItem>
-                    <SelectItem value="dark">Dark</SelectItem>
-                    <SelectItem value="system">System</SelectItem>
-                  </SelectContent>
-                </Select>
+      {!loading && models.length > 0 && (
+        <div className="space-y-6">
+          {models.map((model) => (
+            <div
+              key={model.id}
+              className="border border-gray-200 rounded-lg shadow-sm p-4"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-xl font-semibold">{model.name}</h2>
+                <span className="text-sm px-2 py-1 bg-gray-100 rounded-md">
+                  {model.status}
+                </span>
               </div>
-            </div>
-            <div className="mt-4">
-              <Line
-                data={CostPerHourData}
-                options={{
-                  plugins: {
-                    legend: {
-                      position: "top" as const,
-                      labels: {
-                        usePointStyle: true,
-                        pointStyle: "circle",
-                        padding: 20,
-                      },
-                    },
-                  },
-                  responsive: true,
-                  maintainAspectRatio: false,
-                }}
-              />
-            </div>
-          </div>
-          <div className="bg-white rounded-lg p-4 sm:p-5">
-            <h1 className="text-xl font-bold text-gray-900 py-2">
-              Health Monitoring
-            </h1>
-            <Bar data={StackBarChartData} options={BarChartOptions} />
-          </div>
-          <div className="bg-white rounded-lg p-4 sm:p-5">
-            <h1 className="text-xl font-bold text-gray-900 py-2">
-              Performance
-            </h1>
-            <div className="w-[80%] mx-auto">
-              <Doughnut
-                data={PerformanceData}
-                options={PerformanceDataOptions}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+              <p className="text-sm text-gray-600 mb-1">
+                <strong>Type:</strong> {model.model_type}
+              </p>
+              <p className="text-sm text-gray-600 mb-1">
+                <strong>Version:</strong> {model.version}
+              </p>
+              <p className="text-sm text-gray-600 mb-1">
+                <strong>Docker Image:</strong> {model.docker_image}
+              </p>
+              <p className="text-sm text-gray-600 mb-1">
+                <strong>Created:</strong>{' '}
+                {new Date(model.created_at).toLocaleString()}
+              </p>
 
-      <ModelUploadModal
-        isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
-        onSuccess={fetchModels}
-      />
+              {model.metrics && (
+                <div className="mt-4">
+                  <h3 className="font-medium mb-1 text-gray-800">Performance Metrics</h3>
+                  <div className="grid grid-cols-3 gap-4 text-sm text-gray-700">
+                    <div>
+                      <span className="font-medium">Latency:</span> {model.metrics.latency}
+                    </div>
+                    <div>
+                      <span className="font-medium">Throughput:</span> {model.metrics.throughput}
+                    </div>
+                    <div>
+                      <span className="font-medium">Accuracy:</span> {model.metrics.accuracy}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
-};
-
-const ModelCard = ({
-  icon,
-  title,
-  state,
-  value,
-  isPositive,
-  className,
-  deployButton,
-}: {
-  icon: string;
-  title: string;
-  state: string;
-  value: string;
-  isPositive: boolean;
-  className?: string;
-  deployButton?: React.ReactNode;
-}) => {
-  const getStatusBadge = (status: string) => {
-    const badges = {
-      ACTIVE: { bg: 'bg-green-100', text: 'text-green-800', label: 'Deployed' },
-      PENDING: { bg: 'bg-yellow-100', text: 'text-yellow-800', label: 'Pending' },
-      STOPPED: { bg: 'bg-red-100', text: 'text-red-800', label: 'Stopped' },
-    };
-    const badge = badges[status as keyof typeof badges] || badges.STOPPED;
-    return (
-      <span className={`${badge.bg} ${badge.text} px-2 py-1 rounded-full text-xs font-medium absolute top-2 right-2`}>
-        {badge.label}
-      </span>
-    );
-  };
-
-  // Ensure all required props are present and valid
-  if (!title || !state || !value) {
-    console.error('Missing required props in ModelCard:', { title, state, value });
-    return null;
-  }
-
-  return (
-    <div
-      className={`rounded-lg shadow-md p-4 flex flex-col gap-5 py-8 px-5 ${className || ''} relative hover:shadow-lg hover:-translate-y-1 transition-all duration-300 ease-in-out`}
-    >
-      {getStatusBadge(state)}
-      <div className="flex items-center gap-2 justify-between">
-        <img
-          src={icon || "/icons/chatgpt.png"}
-          alt={title}
-          className="w-10 h-10"
-          width={40}
-          height={40}
-        />
-        <div
-          className={`${
-            isPositive ? "text-green-500" : "text-red-500"
-          } font-bold`}
-        >
-          <span>{isPositive ? "↑" : "↓"}</span> {value}
-        </div>
-      </div>
-      <div className="flex flex-col gap-3">
-        <div className="text-gray-900 font-bold text-2xl">{title}</div>
-        <div className="font-semibold flex items-center gap-2 px-2">
-          <div
-            className={`${
-              isPositive ? "bg-green-500" : "bg-red-500"
-            } rounded-full size-3`}
-          />
-          {state}
-        </div>
-        {deployButton && (
-          <div className="mt-2">
-            {deployButton}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default Models;
+}
