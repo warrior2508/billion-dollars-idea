@@ -64,7 +64,7 @@ const Analytics = () => {
         <div className=" grid grid-cols-3 gap-4">
           <div className="bg-white rounded-lg p-5">
             <LineChartCard
-              title="Total Revenue"
+              title="Total Latency"
               value="125 ms"
               color="#303F9F"
               data={LineChartData}
